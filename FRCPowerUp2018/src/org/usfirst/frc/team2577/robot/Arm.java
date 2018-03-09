@@ -8,6 +8,7 @@ public class Arm {
 	private TalonSRX wrist;
 	private TalonSRX winch;
 	
+	//All wrist and shoulder positions are set in the resetWristValues and resetShoulderValues functions
 	public int wristDownPosition;
 	public int shoulderDownPosition;
 	

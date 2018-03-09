@@ -27,6 +27,7 @@ public class Robot extends IterativeRobot {
 	private static final String kForwardAuto = "Move Forward Auto";
 	private String m_autoSelected;
 	private SendableChooser<String> m_chooser = new SendableChooser<>();
+	private SendableChooser<Boolean> encoderLimits_chooser = new SendableChooser<>();
 	private boolean encoderLimitsEnabled = true;
 	private boolean encodersCalibrated = false;
 	private Joystick joy1;
@@ -48,8 +49,11 @@ public class Robot extends IterativeRobot {
 	public void robotInit() {
 		m_chooser.addDefault("Default Auto", kDefaultAuto);
 		m_chooser.addObject("My Auto", kForwardAuto);
+		encoderLimits_chooser.addDefault("OFF", false);
+		encoderLimits_chooser.addObject("ON", true);
+		
 		SmartDashboard.putData("Auto choices", m_chooser);
-		SmartDashboard.putBoolean("Encoder Wrist Limits", encoderLimitsEnabled);
+		SmartDashboard.putData("Encoder Wrist Limits", encoderLimits_chooser);
 		
 		autoTimer = new Timer();
 		
@@ -65,23 +69,11 @@ public class Robot extends IterativeRobot {
 		hand = new Hand(58, 54);
 	}
 
-	/**
-	 * This autonomous (along with the chooser code above) shows how to select
-	 * between different autonomous modes using the dashboard. The sendable
-	 * chooser code works with the Java SmartDashboard. If you prefer the
-	 * LabVIEW Dashboard, remove all of the chooser code and uncomment the
-	 * getString line to get the auto name from the text box below the Gyro
-	 *
-	 * <p>You can add additional auto modes by adding additional comparisons to
-	 * the switch structure below with additional strings. If using the
-	 * SendableChooser make sure to add them to the chooser code above as well.
-	 */
+	
 	@Override
 	public void autonomousInit() {
 		autoTimer.start();
 		m_autoSelected = m_chooser.getSelected();
-		// autoSelected = SmartDashboard.getString("Auto Selector",
-		// defaultAuto);
 		System.out.println("Auto selected: " + m_autoSelected);
 	}
 
@@ -107,7 +99,7 @@ public class Robot extends IterativeRobot {
 	
 	@Override 
 	public void teleopInit(){
-		encoderLimitsEnabled = SmartDashboard.getBoolean("Encoder Wrist Limits", false);
+		encoderLimitsEnabled = encoderLimits_chooser.getSelected();
 		System.out.println("Encoder limits: "+encoderLimitsEnabled);
 	}
 
@@ -121,18 +113,23 @@ public class Robot extends IterativeRobot {
 		double powerLimit = (1-joy1.getRawAxis(3))/2;
 		double magnitude = Math.min(1.0, Math.hypot(joy1.getRawAxis(0), joy1.getRawAxis(1)));
 		
+		drive.drive(direction, rotation*powerLimit, magnitude*powerLimit);
+		
+		
+		//Log encoder values
 		if(joy1.getRawButton(12)){
 			System.out.println("Shoulder: "+arm.getShoulderPosition());
 			System.out.println("Wrist: "+arm.getWristPosition());
 		}
 		
+		//Recalibrate the encoders
 		if(joy1.getRawButton(11)){
 			arm.resetShoulderValues(arm.getShoulderPosition());
 			arm.resetWristValues(arm.getWristPosition());
+			encodersCalibrated = true;
 		}
 		
-		drive.drive(direction, rotation*powerLimit, magnitude*powerLimit);
-		
+		//Hand controls
 		if(joy1.getRawButton(2) || joy2.getRawButton(6)){
 			hand.spitOut();
 		}else if(joy1.getRawButton(1) || joy2.getRawButton(5)){
@@ -145,6 +142,7 @@ public class Robot extends IterativeRobot {
 			hand.stop();
 		}
 		
+		//Move shulder & wrist using encoder positions
 		boolean movingWrist = false;
 		if(joy2.getRawButton(1)){
 			arm.moveShoulderTowardsTarget(arm.shoulderDownPosition);
@@ -162,23 +160,29 @@ public class Robot extends IterativeRobot {
 			arm.moveShoulderTowardsTarget(arm.shoulderUpPosition);
 			arm.moveWristTowardsTarget(arm.wristUpPosition);
 			movingWrist = true;
-		}else if(joy1.getRawButton(3)){
+		}
+		//Move shoulder using joy1 buttons
+		else if(joy1.getRawButton(3)){
 			arm.moveShoulder(-1);
 		}else if(joy1.getRawButton(5)){ //Raise Arm
 			arm.moveShoulder(1);
-		}else{
+		}
+		//Move shoulder using joy2 joystick
+		else{
 			arm.moveShoulder(-joy2.getRawAxis(1));
 		}
 		
+		//Move wrist using joy1 buttons (will override encoder commands)
 		if(joy1.getRawButton(4)){
 			arm.moveWrist(-1);
 		}else if(joy1.getRawButton(6)){ //Raise Wrist
 			arm.moveWrist(1);
-		}else if(!movingWrist){
+		}else if(!movingWrist){ //Using else if to avoid overwriting encoder commands
 			arm.moveWrist(-joy2.getRawAxis(5));
 		}
-		/*
-		if(encoderLimitsEnabled && !joy1.getRawButton(11) && !joy2.getRawButton(2)){
+		
+		//Auto wrist-raising
+		if(encodersCalibrated && encoderLimitsEnabled && !joy1.getRawButton(11) && !joy2.getRawButton(2)){
 			if(arm.getShoulderPosition() < arm.shoulderWristFoldBottomLimit && arm.getShoulderPosition() > arm.shoulderWristFoldTopLimit){
 				arm.moveWristTowardsTarget(arm.wristUpPosition);
 			}
@@ -189,8 +193,6 @@ public class Robot extends IterativeRobot {
 				}
 			}
 		}
-		*/
-		
 		
 		if(joy1.getRawButton(8) || joy2.getPOV() == 180){ //Winch in
 			arm.moveWinch(1);

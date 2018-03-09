@@ -38,24 +38,37 @@ public class MecanumDrive {
 	}
 	
 	/**
+	 * Mecanum drive code.
+	 * Uses gyro values to compensate for turn drifting.
+	 * Polar drive system.
 	 * 
 	 * @param angle     angle of strafe (0 is forward, Pi/2 is right, Pi is back)
 	 * @param rotation  rotation of robot (from -1 to 1)
 	 * @param magnitude    magnitude of strafe
 	 */
 	public void drive(double direction, double rotation, double magnitude){
-		double gyroAngle = (gyro.getAngle()); //Get the current angle of the gyro in radians (Always positive)
+		//Get the current gyro angle
+		double gyroAngle = gyro.getAngle();
+		//Find the change since our last angle
 		double dAngle = (lastAngle - gyroAngle);
+		//Find the change in time since out last measurement
 		double dTime = t.get();
 		t.reset();
+		//Find the change in angle over time (angular velocity)
 		double velocity = dAngle/dTime;
 		
-		averageGoal = (averageGoal * 3 + rotation)/4.0;
-		
+		//Find the AVERAGE velocity (just a smoothed out velocity that has been averaged to minimize static noise and improve accuracy)
 		averageVelocity = (averageVelocity * 3 + velocity)/4;
 		
+		//Find the AVERAGE rotational goal (smoothed out)
+		averageGoal = (averageGoal * 3 + rotation)/4.0;
+		
+		//Update the last angle
 		lastAngle = gyroAngle;
 		
+		//Update the rotational goal to compensate for how off we are from the goal.
+		//Dividing by 300 to convert the degrees per second into power for a motor. We found that about 300 degrees per second is a 1 in turning power.
+		//The 1.5x is a multiplier to make sure the offset is applied enough to have an actual effect.
 		rotation += (averageGoal - averageVelocity/300.0)*1.5;
 		
 		
