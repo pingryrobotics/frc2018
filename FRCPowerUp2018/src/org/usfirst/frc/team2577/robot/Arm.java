@@ -34,25 +34,30 @@ public class Arm {
 		shoulder = new TalonSRX(shoulderPort);
 		wrist = new TalonSRX(wristPort);
 		winch = new TalonSRX(winchPort);
-		resetWristValues(3900);
-		resetShoulderValues(2850);
+		wristDownPosition = 3900;
+		resetWristValues();
+		shoulderDownPosition = 2850;
+		resetShoulderValues();
 	}
 	
-	public void resetWristValues(int newWristDown){
-		wristDownPosition = newWristDown;
+	public void resetWristValues(){
 		wristUpPosition = wristDownPosition + 1100;
 		wristSwitchPosition = wristDownPosition + 500;
 		wristForwardPosition = wristDownPosition - 500;
 	}
 	
-	public void resetShoulderValues(int newShoulderDown){
-		shoulderDownPosition = newShoulderDown;
+	public void resetWristValuesTop(int newWristTop){
+		wristDownPosition = newWristTop - 1100;
+		resetWristValues();
+	}
+	
+	public void resetShoulderValues(){
 		shoulderSwitchPosition = shoulderDownPosition - 1200;
 		shoulderForwardPosition = shoulderDownPosition - 5800;
 		shoulderUpPosition = shoulderDownPosition - 8650;
 		
 		shoulderWristFoldBottomLimit = shoulderDownPosition - 900;
-		shoulderWristFoldTopLimit = shoulderDownPosition - 8200;
+		shoulderWristFoldTopLimit = shoulderDownPosition - 7000;
 		
 	}
 	

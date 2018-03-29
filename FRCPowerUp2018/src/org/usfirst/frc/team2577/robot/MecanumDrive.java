@@ -11,7 +11,7 @@ public class MecanumDrive {
 	private TalonSRX frontRight;
 	private TalonSRX rearLeft;
 	private TalonSRX rearRight;
-	private ADXRS450_Gyro gyro;
+	public ADXRS450_Gyro gyro;
 	private double lastAngle = 0;
 	private double averageVelocity = 0;
 	private double averageGoal = 0;
@@ -33,8 +33,16 @@ public class MecanumDrive {
 		gyro.calibrate();
 	}
 	
+	public void driveForwardAtHeading(double angle, double speed){
+		drive(0, (gyro.getAngle() + angle)*0.05, speed);
+	}
+	
 	public void driveForward(double speed){
 		drive(0, 0, speed);
+	}
+	
+	public void driveTowardsGyro(double angle, double power){
+		drive(0, Math.abs(power)*Math.max(-1, Math.min(1, (gyro.getAngle() + angle)/20.0)), 0);
 	}
 	
 	/**
@@ -42,7 +50,7 @@ public class MecanumDrive {
 	 * Uses gyro values to compensate for turn drifting.
 	 * Polar drive system.
 	 * 
-	 * @param angle     angle of strafe (0 is forward, Pi/2 is right, Pi is back)
+	 * @param direction     angle of strafe (0 is forward, Pi/2 is right, Pi is back)
 	 * @param rotation  rotation of robot (from -1 to 1)
 	 * @param magnitude    magnitude of strafe
 	 */
@@ -72,7 +80,7 @@ public class MecanumDrive {
 		rotation += (averageGoal - averageVelocity/300.0)*1.5;
 		
 		
-		direction += Math.PI/4.0;  //Strafe direction needs to be offset slightly
+		direction += Math.PI/4.0;  //Strafe direction needs to be offset so that forwards has everything go at the same power
 		double v1 = magnitude * Math.cos(direction) + rotation;
         double v2 = magnitude * Math.sin(direction) - rotation;
         double v3 = magnitude * Math.sin(direction) + rotation;
