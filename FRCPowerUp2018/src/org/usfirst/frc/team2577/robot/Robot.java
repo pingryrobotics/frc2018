@@ -7,8 +7,6 @@
 
 package org.usfirst.frc.team2577.robot;
 
-import edu.wpi.cscore.UsbCamera;
-import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.IterativeRobot;
@@ -43,9 +41,6 @@ public class Robot extends IterativeRobot {
 	private Hand hand;
 	
 	private Timer autoTimer;
-	
-	private UsbCamera camera1;
-	private UsbCamera camera2;
 
 	/**
 	 * This function is run when the robot is first started up and should be
@@ -53,25 +48,26 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void robotInit() {
-		autoChooser.addDefault("Do Nothing", "default");
+		autoChooser.addDefault("Do Nothing (Auto Program)", "default");
 		autoChooser.addObject("Forward Auto", "forward");
 		autoChooser.addObject("Strafe Left Auto", "left");
 		autoChooser.addObject("Strafe Right Auto", "right");
 		autoChooser.addObject("Forward & Place Cube", "color forward");
 		autoChooser.addObject("Color side", "color side");
 		autoChooser.addObject("Color center", "color center");
+		autoChooser.addObject("Scale Only", "scale");
 		autoChooser.addObject("Test", "test");
 		
-		autoSide_chooser.addDefault("Right", 'R');
+		autoSide_chooser.addDefault("Right (Auto Side)", 'R');
 		autoSide_chooser.addObject("Left", 'L');
 		
-		encoderLimits_chooser.addDefault("OFF", false);
+		encoderLimits_chooser.addDefault("OFF (Encoder Limits)", false);
 		encoderLimits_chooser.addObject("ON", true);
 		
-		teleopWristStart.addDefault("Off", "off");
+		teleopWristStart.addDefault("Off (Teleop Wrist Calibration)", "off");
 		teleopWristStart.addObject("Top", "up");
 		teleopWristStart.addObject("Bottom", "down");
-		teleopShoulderStart.addDefault("Off", "off");
+		teleopShoulderStart.addDefault("Off (Teleop Shoulder Calibration)", "off");
 		teleopShoulderStart.addObject("Down", "down");
 		
 		SmartDashboard.putData("Auto choices", autoChooser);
@@ -82,16 +78,17 @@ public class Robot extends IterativeRobot {
 		
 		autoTimer = new Timer();
 		
-		camera1 = CameraServer.getInstance().startAutomaticCapture(0);
+		/*camera1 = CameraServer.getInstance().startAutomaticCapture(0);
 		camera2 = CameraServer.getInstance().startAutomaticCapture(1);
 		camera1.setResolution(320, 240);
-		camera2.setResolution(320, 240);
+		camera2.setResolution(320, 240);*/
 		
 		joy1 = new Joystick(0);
 		joy2 = new Joystick(1);
 		drive = new MecanumDrive(53, 56, 50, 51);
 		arm = new Arm(57, 52, 55);
 		hand = new Hand(58, 54);
+		drive.gyro.calibrate();
 	}
 
 	
@@ -137,36 +134,37 @@ public class Robot extends IterativeRobot {
 				}
 				break;
 			case "color center":
-				if(autoTimer.get() < 4.5){
+				if(autoTimer.get() < 3.5){
 					if(DriverStation.getInstance().getGameSpecificMessage().charAt(0) == 'L'){
-						drive.drive(-0.6*Math.PI, 0, 0.5);
+						drive.drive(-0.6*Math.PI, 0, 0.8);
 					}else {
-						drive.drive(0.6*Math.PI, 0, 0.5);
+						drive.drive(0.6*Math.PI, 0, 0.8);
 					}
-				}else if(autoTimer.get() < 5.8){
-					arm.moveShoulderTowardsTarget(arm.shoulderSwitchPosition - 1400);
+				}else if(autoTimer.get() < 4.5){
+					arm.moveShoulderTowardsTarget(arm.shoulderSwitchPosition - 400);
 					arm.moveWristTowardsTarget(arm.wristSwitchPosition);
 					drive.drive(0,0,0);
-				}else if(autoTimer.get() < 7){
-					arm.moveShoulderTowardsTarget(arm.shoulderSwitchPosition - 1400);
+				}else if(autoTimer.get() < 5.5){
+					arm.moveShoulderTowardsTarget(arm.shoulderSwitchPosition - 400);
 					arm.moveWristTowardsTarget(arm.wristSwitchPosition);
 					drive.drive(0,0,-0.4);
 				}else {
-					arm.moveShoulderTowardsTarget(arm.shoulderSwitchPosition - 1400);
-					arm.moveWristTowardsTarget(arm.wristSwitchPosition);
-					drive.drive(0,0,0);
+					arm.moveShoulder(0);
+					arm.moveWrist(0);
 					hand.spitAtPower(0.3);
 				}
 				break;
 			case "color forward":
 				if(autoTimer.get() < 2){
-					arm.moveShoulderTowardsTarget(arm.shoulderSwitchPosition - 1400);
+					arm.moveShoulderTowardsTarget(arm.shoulderSwitchPosition - 400);
 					arm.moveWristTowardsTarget(arm.wristSwitchPosition);
 				}else if(autoTimer.get() < 6){
-					arm.moveShoulderTowardsTarget(arm.shoulderSwitchPosition - 1400);
+					arm.moveShoulderTowardsTarget(arm.shoulderSwitchPosition - 400);
 					arm.moveWristTowardsTarget(arm.wristSwitchPosition);
 					drive.drive(0,0,-0.5);
 				}else if(autoTimer.get() < 10){
+					arm.moveShoulder(0);
+					arm.moveWrist(0);
 					drive.drive(0,0,0);
 					if(DriverStation.getInstance().getGameSpecificMessage().charAt(0) == autoSide){
 						hand.spitAtPower(0.5);
@@ -177,20 +175,22 @@ public class Robot extends IterativeRobot {
 				break;
 			case "color side":
 				if(DriverStation.getInstance().getGameSpecificMessage().charAt(1) == autoSide){ //Go for Scale
-					if(autoTimer.get() < 4.15){
+					if(autoTimer.get() < 3.75){
 						drive.driveForwardAtHeading(0, -0.8);
-					}else if(autoTimer.get() < 6){
+					}else if(autoTimer.get() < 4.25) {
+						drive.drive(0,0,0);
+					}else if(autoTimer.get() < 5.25){
 						if(autoSide == 'R'){
 							drive.driveTowardsGyro(-90, 0.6);
 						}else {
 							drive.driveTowardsGyro(90, 0.6);
 						}
-					}else if(autoTimer.get() < 8){
+					}else if(autoTimer.get() < 7.5){
 						drive.drive(0,0,0);
-						arm.moveShoulderTowardsTarget(arm.shoulderUpPosition+400);
+						arm.moveShoulderTowardsTarget(arm.shoulderUpPosition+300);
 						arm.moveWristTowardsTarget(arm.wristUpPosition);
-					}else if(autoTimer.get() < 9.5) {
-						arm.moveShoulderTowardsTarget(arm.shoulderUpPosition+400);
+					}else if(autoTimer.get() < 9) {
+						arm.moveShoulderTowardsTarget(arm.shoulderUpPosition+300);
 						arm.moveWristTowardsTarget(arm.wristSwitchPosition);
 					}else {
 						arm.moveShoulder(0);
@@ -198,31 +198,108 @@ public class Robot extends IterativeRobot {
 						hand.spitAtPower(0.6);
 					}
 				}else if(DriverStation.getInstance().getGameSpecificMessage().charAt(0) == autoSide){ // Go for Switch
-					if(autoTimer.get() < 1.95){
+					if(autoTimer.get() < 1.5){
 						drive.driveForwardAtHeading(0, -0.8);
-					}else if(autoTimer.get() < 2.8){
-						arm.moveShoulderTowardsTarget(arm.shoulderSwitchPosition - 1400);
-						arm.moveWristTowardsTarget(arm.wristSwitchPosition);
+					}else if(autoTimer.get() < 2.5) {
+						drive.drive(0,0,0);
+					}
+					else if(autoTimer.get() < 3.5){
+						arm.moveShoulderTowardsTarget(arm.shoulderSwitchPosition - 400);
+						if(autoTimer.get() > 4) {
+							arm.moveWristTowardsTarget(arm.wristSwitchPosition);
+						}
 						if(autoSide == 'L'){
 							drive.driveTowardsGyro(-90, 0.6);
 						}else {
 							drive.driveTowardsGyro(90, 0.6);
 						}
-					}else if(autoTimer.get() < 3.8){
-						arm.moveShoulderTowardsTarget(arm.shoulderSwitchPosition - 1400);
+					}else if(autoTimer.get() < 5){
+						arm.moveShoulderTowardsTarget(arm.shoulderSwitchPosition - 400);
 						arm.moveWristTowardsTarget(arm.wristSwitchPosition);
 						drive.drive(0, 0, -0.5);
-					}else if(autoTimer.get() < 5){
+					}else if(autoTimer.get() < 6){
 						arm.moveShoulder(0);
 						arm.moveWrist(0);
 						drive.drive(0,0,0);
-						hand.spitAtPower(0.5);
+						hand.spitAtPower(0.4);
 					}
+				}else{
+					if(autoTimer.get() < 4){
+						drive.drive(0, 0, -0.5);
+					}else{
+						drive.drive(0, 0, 0);
+					}
+					break;
 				}
 				
 				break;
+			case "scale":
+				if(DriverStation.getInstance().getGameSpecificMessage().charAt(1) == autoSide){ //Same Side Scale
+					if(autoTimer.get() < 3.75){
+						drive.driveForwardAtHeading(0, -0.8);
+					}else if(autoTimer.get() < 4.25) {
+						drive.drive(0,0,0);
+					}else if(autoTimer.get() < 5.25){
+						if(autoSide == 'R'){
+							drive.driveTowardsGyro(-90, 0.6);
+						}else {
+							drive.driveTowardsGyro(90, 0.6);
+						}
+					}else if(autoTimer.get() < 7.5){
+						drive.drive(0,0,0);
+						arm.moveShoulderTowardsTarget(arm.shoulderUpPosition+300);
+						arm.moveWristTowardsTarget(arm.wristUpPosition);
+					}else if(autoTimer.get() < 9) {
+						arm.moveShoulderTowardsTarget(arm.shoulderUpPosition+300);
+						arm.moveWristTowardsTarget(arm.wristSwitchPosition);
+					}else {
+						arm.moveShoulder(0);
+						arm.moveWrist(0);
+						hand.spitAtPower(0.6);
+					}
+				}else {  //Far side scale
+					if(autoTimer.get() < 2.4) {
+						drive.driveForwardAtHeading(0, -1);
+					}else if(autoTimer.get() < 3.4) {
+						if(autoSide == 'R'){
+							drive.driveTowardsGyro(90, 0.6);
+						}else {
+							drive.driveTowardsGyro(-90, 0.6);
+						}
+					}else if(autoTimer.get() < 6) {
+						if(autoSide == 'R'){
+							drive.driveForwardAtHeading(90, -1);
+						}else {
+							drive.driveForwardAtHeading(-90, -1);
+						}
+					}else if(autoTimer.get() < 7) {
+						if(autoSide == 'R'){
+							drive.driveTowardsGyro(150, 0.6);
+						}else {
+							drive.driveTowardsGyro(-150, 0.6);
+						}
+					}else if(autoTimer.get() < 7.75) { //Back up
+						if(autoSide == 'R'){
+							drive.driveForwardAtHeading(150, 0.6);
+						}else {
+							drive.driveForwardAtHeading(-150, 0.6);
+						}
+					}else if(autoTimer.get() < 9){
+						drive.drive(0,0,0);
+						arm.moveShoulderTowardsTarget(arm.shoulderUpPosition+300);
+						arm.moveWristTowardsTarget(arm.wristUpPosition);
+					}else if(autoTimer.get() < 11.5) {
+						arm.moveShoulderTowardsTarget(arm.shoulderUpPosition+300);
+						arm.moveWristTowardsTarget(arm.wristSwitchPosition);
+					}else {
+						arm.moveShoulder(0);
+						arm.moveWrist(0);
+						hand.spitAtPower(0.7);
+					}
+				}
+				break;
 			case "test":
-				drive.driveTowardsGyro(90, 0.6);
+				drive.driveTowardsGyro(75, 0.6);
 				break;
 			case "default":
 			default:
@@ -255,7 +332,7 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void teleopPeriodic() {
 		double direction = Math.atan2(joy1.getRawAxis(0), joy1.getRawAxis(1));
-		double rotation = Math.pow(-joy1.getRawAxis(2), 1.0);  //power must be  1 + 0.4*strength   (so it has positive and negative)
+		double rotation = Math.pow(-joy1.getRawAxis(2), 3);  //power must be  1 + 0.4*strength   (so it has positive and negative)
 		double powerLimit = (1-joy1.getRawAxis(3))/2;
 		double magnitude = Math.min(1.0, Math.hypot(joy1.getRawAxis(0), joy1.getRawAxis(1)));
 		

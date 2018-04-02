@@ -30,7 +30,6 @@ public class MecanumDrive {
 		
 		frontLeft.setInverted(true);
 		rearLeft.setInverted(true);
-		gyro.calibrate();
 	}
 	
 	public void driveForwardAtHeading(double angle, double speed){
@@ -42,7 +41,12 @@ public class MecanumDrive {
 	}
 	
 	public void driveTowardsGyro(double angle, double power){
-		drive(0, Math.abs(power)*Math.max(-1, Math.min(1, (gyro.getAngle() + angle)/20.0)), 0);
+		double gyroAngle = gyro.getAngle();
+		double driveAngle = Math.abs(power)*Math.max(-1, Math.min(1, (gyroAngle + angle)/20.0));
+		
+		System.out.println("Angle: "+gyroAngle);
+		System.out.println("Turn power: "+driveAngle);
+		drive(0, driveAngle, 0);
 	}
 	
 	/**

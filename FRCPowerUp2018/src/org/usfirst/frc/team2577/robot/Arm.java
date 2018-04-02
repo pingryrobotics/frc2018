@@ -89,7 +89,7 @@ public class Arm {
 	
 	public void moveWristTowardsTarget(int target){
 		int wristOffset = target - getWristPosition(); //If is greater than 0, move wrist up
-		double wristPower = 0.8*Math.min(1.0, Math.max(-1.0, Math.pow(wristOffset/100.0, 3)));
+		double wristPower = 0.6*Math.min(1.0, Math.max(-1.0, Math.pow(wristOffset/100.0, 3)));
 		moveWrist(wristPower); // positive power is up
 	}
 }
